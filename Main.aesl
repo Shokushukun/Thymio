@@ -1,0 +1,420 @@
+<!DOCTYPE aesl-source>
+<network>
+
+
+<!--list of global events-->
+
+
+<!--list of constants-->
+
+
+<!--show keywords state-->
+<keywords flag="true"/>
+
+
+<!--node thymio-II-->
+<node nodeId="1" name="thymio-II">#
+#
+#	Variables	
+#
+#
+
+#Déclaration des variables
+var nombre
+var x
+var leds[8]
+var ledsTop[3]
+var compteur
+var ledsCircle[8]
+var ledsCompteur[8]
+var restant
+var totalCase
+var go
+var total
+var previousSpeed[2]
+var detecte
+var emplacement
+var totalLed
+var start
+var cases #Nombre de case dans le tableau
+var caseT[4] #Emplacement des cases sur lesquelles le robot doit tourner
+var caseS1 #Emplacement de la première case spéciale; fait avancer le robot de 
+
+#
+#
+#	Initialisation
+#
+#
+
+#appel de la routine d'initialisation
+callsub init  
+
+sub init #routine d'initialisation : active la communication infrarouge, réinitialise les variables
+
+	call prox.comm.enable(1)
+	prox.comm.tx=0 #reset de la valeur envoyée
+	prox.comm.rx=0 #reset de la valeur reçue
+	
+	caseS1 = 1
+	cases = 6
+	caseT[0:3]=[(cases/2)-1,(cases/2),cases-1,cases] #Emplacement des cases sur lesquelles le robot doit tourner
+	
+	#allume les leds en blanc
+	call leds.temperature(100,100)
+	call leds.top(100,100,100) 
+	call leds.bottom.left(100,100,100)
+	call leds.bottom.right(100,100,100)
+	
+	#réinitialise les leds des boutons et du cercle
+	call leds.circle(0,0,0,0,0,0,0,0)
+	call leds.buttons(0,0,0,0)
+	call leds.sound(0)
+		
+	#réinitialise la vitesse des moteurs
+	motor.left.target=0
+	motor.right.target=0
+	
+	#lance le timer des leds pour 2s, laisse celui pour tourner à 0
+	timer.period[0]=2000
+	timer.period[1]=0
+	
+	#met les deux variables random à 0
+	nombre=0
+	x=0
+	
+	#réinitialise les variables pour les leds
+	ledsTop=[0,0,0]
+	leds=[0,0,0,0,0,0,0,0]
+	ledsCircle[0:7]=[0,0,0,0,0,0,0,0]
+	ledsCompteur[0:7]=[0,0,0,0,0,0,0,0]
+	
+	#réinitialise les compteurs
+	compteur=-1
+	restant=0
+	totalCase=0
+	go=0
+	total=0
+	detecte=2
+	emplacement=0
+	start=0
+	totalLed=0
+
+#
+#
+#	Events	
+#
+#
+
+#reinitialise le robot si le bouton central est appuyé
+onevent button.center 
+    callsub init
+
+#fait avancer le robot si le bouton avant est appuyé
+onevent button.forward 
+	callsub avant
+	go=1
+	start=1
+	totalLed=0
+	
+#ajoute 1 au compteur pour ajuster la position du robot
+onevent button.backward 
+	when  button.backward==1 do
+		compteur++
+		totalLed++
+		call leds.sound(100)
+	end
+
+#génère un nombre random 1-8
+onevent button.left
+	when button.left==1 do
+		callsub random
+		totalLed=0
+		ledsCompteur[0:7]=[0,0,0,0,0,0,0,0]
+	end
+	
+onevent button.right
+	when  button.right==1 do
+		nombre=20
+	end
+	
+#Gère la couleur des leds
+onevent motor
+	callsub leds
+	callsub compteur
+	callsub ledsCompteur
+	callsub compare
+	if go==1 then
+		restant=nombre-totalCase
+	end
+	callsub go
+	callsub tourne
+	when compteur>=cases do
+		compteur=0
+	end
+	callsub checkfeuille
+	callsub caseSpeciale
+	
+	
+#Réinitialise les leds automatiquement
+onevent timer0
+	call leds.top(0,0,0)
+	call leds.bottom.left(0,0,0)
+	call leds.bottom.right(0,0,0)
+	call leds.temperature(0,0)
+	call leds.sound(0)
+	call leds.buttons(0,0,0,0)
+
+onevent timer1
+	detecte++
+	if totalCase==caseT[0] or totalCase==caseT[2] then
+		if detecte&lt;=1 then
+			callsub arret
+		end
+		if detecte==2 then
+			timer.period[1]=0
+		end
+		if restant>=1 and detecte&lt;=1 then
+			callsub avant
+		end
+	elseif totalCase==caseT[1] or totalCase==0 or totalCase==caseT[3] then
+		detecte=2
+		timer.period[1]=0
+		if restant>=1 then
+			callsub avant
+		end
+	end
+	
+	
+#
+#
+#	Routines
+#
+#
+
+#Gère les cases spéciales
+sub caseSpeciale
+	when totalCase==caseS1 and motor.left.speed&lt;5 and motor.right.speed&lt;5 do
+		nombre+=2
+		callsub avant
+	end
+return
+
+#Vérifie que la feuille soit présente
+sub checkfeuille
+	when prox.ground.delta[1]&lt;250 or acc[0]>5 or acc[1]>5 do
+		callsub arret
+		call leds.top(250,0,0)
+	end
+return
+
+#Compte les lignes
+sub compteur
+	when prox.ground.delta[0]&lt;600 and detecte>=2 do
+		compteur++
+		totalLed++
+		total++
+		call leds.temperature(100,100)
+	end
+	if compteur&lt;0 then
+		totalCase=0
+	elseif go==1 and not compteur&lt;0 then
+		totalCase=compteur
+	end
+return
+
+#Fait tourner le robot lorsqu'il se trouve sur une des cases
+sub tourne
+	when totalCase==caseT[0] or totalCase==caseT[2] do
+		detecte=0
+		callsub rotate
+		callsub timerRotate
+		call leds.buttons(100,100,100,100)
+	end
+	when totalCase==caseT[1] or totalCase==caseT[3] do
+		detecte=0
+		callsub rotate
+		callsub timerRotate
+		call leds.buttons(100,100,100,100)
+	end
+	when totalCase==caseT[1] and start==1 do
+		start=0
+		detecte=0
+		callsub rotate
+		callsub timerRotate
+		call leds.buttons(100,100,100,100)
+	end
+return
+
+#Lance le timer pour la durée du virage
+sub timerRotate
+	when 1==1 do
+		timer.period[1]=2200
+	end
+return
+
+#Arrête le robot lorsqu'il ne reste plus de cases à parcourir
+sub compare
+	when restant==0 do
+		if totalCase==1 then
+			nombre+=2
+			callsub avant
+		else
+		callsub arret
+		end
+	end
+return
+
+#Fait émettre var restant
+sub go
+	if go==1 then
+		prox.comm.tx=restant
+	end
+return
+
+#Fait avancer le robot
+sub avant
+	motor.left.target=100
+	motor.right.target=100
+return
+
+#Arrête le robot
+sub arret
+	motor.left.target=0
+	motor.right.target=0
+return
+
+#Fait tourner le robot
+sub rotate
+	motor.left.target=-100
+	motor.right.target=100
+return
+
+#Fait reculer le robot
+sub arriere
+	motor.right.target=-100
+	motor.left.target=-100
+return
+
+#
+#
+#	Leds
+#
+#
+
+#Affiche le compteur+cible
+sub leds
+	call leds.circle(ledsCircle[0]+ledsCompteur[0],ledsCircle[1]+ledsCompteur[1],ledsCircle[2]+ledsCompteur[2],ledsCircle[3]+ledsCompteur[3],ledsCircle[4]+ledsCompteur[4],ledsCircle[5]+ledsCompteur[5],ledsCircle[6]+ledsCompteur[6],ledsCircle[7]+ledsCompteur[7])
+	when motor.right.target>=100 do
+		call leds.top(0,200,0)
+	end
+	when motor.right.target==0 do
+		call leds.top(200,0,0)
+	end
+return
+
+#Gère les leds du compteur
+sub ledsCompteur
+	if  totalLed == 1 then
+		ledsCompteur[0:7]=[100,0,0,0,0,0,0,0]
+	end
+	
+	if  totalLed == 2 then
+		ledsCompteur[0:7]=[100,100,0,0,0,0,0,0]
+	end
+	
+	if  totalLed == 3 then
+		ledsCompteur[0:7]=[100,100,100,0,0,0,0,0]
+	end
+	
+	if  totalLed == 4 then
+		ledsCompteur[0:7]=[100,100,100,100,0,0,0,0]
+	end
+	
+	if  totalLed == 5 then
+		ledsCompteur[0:7]=[100,100,100,100,100,0,0,0]
+	end
+	
+	if  totalLed == 6 then
+		ledsCompteur[0:7]=[100,100,100,100,100,100,0,0]
+	end
+	
+	if  totalLed == 7 then
+		ledsCompteur[0:7]=[100,100,100,100,100,100,100,0]
+	end
+	
+	if  totalLed == 8 then
+		ledsCompteur[0:7]=[100,100,100,100,100,100,100,100]
+	end
+
+	if  nombre == 1 then
+		ledsCircle[0:7]=[1,0,0,0,0,0,0,0]
+	end
+	
+	if  nombre == 2 then
+		ledsCircle[0:7]=[1,1,0,0,0,0,0,0]
+	end
+	
+	if  nombre == 3 then
+		ledsCircle[0:7]=[1,1,1,0,0,0,0,0]
+	end
+	
+	if  nombre == 4 then
+		ledsCircle[0:7]=[1,1,1,1,0,0,0,0]
+	end
+	
+	if  nombre == 5 then
+		ledsCircle[0:7]=[1,1,1,1,1,0,0,0]
+	end
+	
+	if  nombre == 6 then
+		ledsCircle[0:7]=[1,1,1,1,1,1,0,0]
+	end
+	
+	if  nombre == 7 then
+		ledsCircle[0:7]=[1,1,1,1,1,1,1,0]
+	end
+	
+	if  nombre == 8 then
+		ledsCircle[0:7]=[1,1,1,1,1,1,1,1]
+	end
+
+return
+
+
+#
+#
+#	Randomizer 1->8
+#
+#
+
+sub random
+call math.rand(x)
+
+if x>24576 then
+nombre=8
+end
+if x>16385 and x&lt;24576 then
+nombre=7
+end
+if x>8194 and x&lt;16385 then
+nombre=6
+end
+if x>3 and x&lt;8194 then
+nombre=5
+end
+if x>-8188 and x&lt;3 then
+nombre=4
+end
+if x> -16379 and x&lt;-8188 then
+nombre=3
+end
+if x>-24570 and x&lt;-16379 then
+nombre=2
+end
+if  x>-31000 and x&lt;-24570 then
+nombre = 1
+end
+</node>
+
+
+</network>
