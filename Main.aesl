@@ -9,24 +9,35 @@
 
 
 <!--show keywords state-->
-<keywords flag="true"/>
+<keywords flag="false"/>
 
 
 <!--node thymio-II-->
 <node nodeId="1" name="thymio-II">var Random1 #Random de -32767 à 32767
 var Random #Random de 1 à 6
-var BoutonCentre #Compte le temps de pression du bouton central
 var Dice #Nombre de cases que le robot doit parcourir
 var LC[8] #Leds du cercle
 var LCD[8] #Leds du cercle allumées par le dé
 var LCP[8] #Leds du cercle ayant été parcourues
+var Compteur #Compte les lignes
+var AllowD #Autorise le compteur à compter les lignes
+var Longueur
+var Largeur
 
+Longueur = 4 
+Largeur = 2
+callsub Init
 
 #Initialisation
 sub Init
 	Random1 = 0 #Reset de la valeur Random1
 	Random = 0 #Reset de la valeur Random
 	Dice = 0 #Réinitialise le dé
+	Compteur = 0
+	AllowD = 1
+	callsub Arret
+	
+	
 	call math.fill(LCP,0)	#Réinitialise les leds du cercle
 	call math.fill(LCD,0)
 	callsub Leds #Puissance des leds : 0
@@ -42,12 +53,34 @@ onevent button.center
 		Dice = Random #Le robot doit avancer de Random cases
 	end
 
+
 onevent button.backward
 	callsub Init
 
 onevent motor
 	callsub Leds
+	callsub CompteLignes
+	
 
+sub CompteLignes
+	when prox.ground.delta[1]&lt;800 do
+		Compteur++
+	end
+return
+
+
+
+sub Arret
+	motor.right.target=0
+	motor.left.target=0
+return
+
+sub Avant
+	motor.left.target=100
+	motor.right.target=100
+return
+
+#Allume les leds du compteur
 sub Leds
 	callsub LedsD
 	#callsub LedsP
@@ -57,7 +90,8 @@ return
 
 #Affiche le nombre sur les leds
 sub LedsD
-	if Dice&lt;=0 then #Si le dé=0, alors aucune led
+	if Dice&lt;=0 then #Si le dé=0, alors aucune led. 
+	#Obligatoire, sinon crash pour accès à un secteur inexistant de l'array LCD lorsque Dice-1&lt;0
 		call math.fill(LCD,0)
 	elseif Dice>0 then #Si le dé>0, alors allumer la led correspondante
 		call math.fill(LCD[abs(Dice-1)],1)
