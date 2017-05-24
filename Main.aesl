@@ -24,20 +24,21 @@ var LCP[8] #Leds du cercle ayant été parcourues
 
 #Initialisation
 sub Init
-	Random1 = 0	#Reset de la valeur Random1
-	Random = 0		#Reset de la valeur Random
-	call math.fill(LC,0)		#Réinitialise les leds du cercle
+	Random1 = 0 #Reset de la valeur Random1
+	Random = 0 #Reset de la valeur Random
+	Dice = 0 #Réinitialise le dé
+	call math.fill(LCP,0)	#Réinitialise les leds du cercle
 	call math.fill(LCD,0)
-	callsub Leds 	#Puissance des leds : 0
+	callsub Leds #Puissance des leds : 0
 	
-	timer.period[1]=0 	#Timer du virage : Arrêt
-	timer.period[0]=0 	#Timer
+	timer.period[1]=0 #Timer du virage : Arrêt
+	timer.period[0]=0 #Timer
 return
 
 onevent button.center
 	when button.center == 1 do
-		callsub RandomGen
-		call math.fill(LCD,0)
+		callsub RandomGen #Génère un nombre aléatoire de 1 à 6
+		call math.fill(LCD,0) #Réinitialise les leds avant de générer le nombre aléatoire
 		Dice = Random #Le robot doit avancer de Random cases
 	end
 
@@ -54,8 +55,14 @@ sub Leds
 	call leds.circle(LC[0],LC[1],LC[2],LC[3],LC[4],LC[5],LC[6],LC[7])
 return
 
+#Affiche le nombre sur les leds
 sub LedsD
-	call math.fill(LCD[abs( Dice-1)],1)
+	if Dice&lt;=0 then #Si le dé=0, alors aucune led
+		call math.fill(LCD,0)
+	elseif Dice>0 then #Si le dé>0, alors allumer la led correspondante
+		call math.fill(LCD[abs(Dice-1)],1)
+	end
+return
 
 #Génère la variable Random avec un nombre aléatoire de 1 à 6
 sub RandomGen
