@@ -15,26 +15,52 @@
 <!--node thymio-II-->
 <node nodeId="1" name="thymio-II">var Random1 #Random de -32767 à 32767
 var Random #Random de 1 à 6
+var BoutonCentre #Compte le temps de pression du bouton central
+var Dice #Nombre de cases que le robot doit parcourir
+var LC[8] #Leds du cercle
+var LCD[8] #Leds du cercle allumées par le dé
+var LCP[8] #Leds du cercle ayant été parcourues
 
 
+#Initialisation
+sub Init
+	Random1 = 0	#Reset de la valeur Random1
+	Random = 0		#Reset de la valeur Random
+	call math.fill(LC,0)		#Réinitialise les leds du cercle
+	call math.fill(LCD,0)
+	callsub Leds 	#Puissance des leds : 0
+	
+	timer.period[1]=0 	#Timer du virage : Arrêt
+	timer.period[0]=0 	#Timer
+return
 
+onevent button.center
+	when button.center == 1 do
+		callsub RandomGen
+		call math.fill(LCD,0)
+		Dice = Random #Le robot doit avancer de Random cases
+	end
 
+onevent button.backward
+	callsub Init
 
+onevent motor
+	callsub Leds
 
+sub Leds
+	callsub LedsD
+	#callsub LedsP
+	LC[0:7]=LCD[0:7]+LCP[0:7]
+	call leds.circle(LC[0],LC[1],LC[2],LC[3],LC[4],LC[5],LC[6],LC[7])
+return
 
-
-
-
-
-
-
-
-
+sub LedsD
+	call math.fill(LCD[abs( Dice-1)],1)
 
 #Génère la variable Random avec un nombre aléatoire de 1 à 6
 sub RandomGen
 	call math.rand( Random1 )
-	Random = abs( Random1 % 6)+1
+	Random = abs( Random1 % 6 ) + 1
 return</node>
 
 
