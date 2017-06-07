@@ -23,7 +23,6 @@ var Compteur #Compte les lignes
 var AllowD #Autorise le compteur à compter les lignes
 var Longueur
 var Largeur
-var CheckReset
 
 Longueur = 4 
 Largeur = 2
@@ -124,10 +123,32 @@ return
 #Allume les leds du compteur
 sub Leds
 	callsub LedsD
-	#callsub LedsP
+	callsub LedsP
 	LC[0:7]=LCD[0:7]+LCP[0:7]
 	call leds.circle(LC[0],LC[1],LC[2],LC[3],LC[4],LC[5],LC[6],LC[7])
 return
+
+#Allume le nombre de leds parcouru. Un peu bricolage mais math.fill ne supporte
+#pas de variable comme argument de tableau :c
+sub LedsP
+	if Compteur>=1 then
+		call math.fill(LCP[0],10)
+	end
+	if Compteur>=2 then
+		call math.fill(LCP[0:1],10)
+	end
+	if Compteur>=3 then
+		call math.fill(LCP[0:2],10)
+	end
+	if Compteur>=4 then
+		call math.fill(LCP[0:3],10)
+	end
+	if Compteur>=5 then
+		call math.fill(LCP[0:4],10)
+	end
+	if Compteur>=6 then
+		call math.fill(LCP[0:5],10)
+	end
 
 #Affiche le nombre sur les leds
 sub LedsD
