@@ -23,6 +23,7 @@ var Compteur #Compte les lignes
 var AllowD #Autorise le compteur à compter les lignes
 var Longueur
 var Largeur
+var CheckReset
 
 Longueur = 4 
 Largeur = 2
@@ -43,7 +44,7 @@ sub Init
 	callsub Leds #Puissance des leds : 0
 	
 	timer.period[1]=0 #Timer du virage : Arrêt
-	timer.period[0]=0 #Timer
+	timer.period[0]=0 #Timer pour ignorer les lignes : Arrêt
 return
 
 
@@ -66,19 +67,46 @@ onevent button.backward
 onevent motor
 	callsub Leds
 	callsub CompteLignes
+	callsub Check
 	
+#Fait avancer le robot
+onevent button.forward
+	callsub Avant
+
+#Timer pour ignorer les lignes pendant 2s ; s'arrête après activation
+onevent timer0
+	AllowD=1
+	timer.period[0]=0
 
 
 
 ############# Routines #############
 
+
+
+#Compare le nombre de lignes et fait arrêter le robot au besoin
+sub Check
+	#motor.left.target est utilisé pour remettre à zéro le when lorsque
+	#le thymio se déplace, afin de faire en sorte que la condition
+	#puisse être trigger à nouveau
+	when Compteur>=Dice and motor.left.target>0 do
+		callsub Arret
+	end
+
+#Empêche la première ligne d'être détectée pendant 2s
+sub NoFirst
+	AllowD=0
+	timer.period[0]=1000
+
 #À chaque fois que le thymio passe une ligne, ajoute 1 au compteur
+#tant que AllowD==1 
 sub CompteLignes
-	when prox.ground.delta[1]&lt;800 do
-		Compteur++
+	when prox.ground.delta[1]&lt;750 do
+		if AllowD==1 then
+			Compteur++
+		end return
 	end
 return
-
 
 #Arrête les deux moteurs
 sub Arret
@@ -90,6 +118,7 @@ return
 sub Avant
 	motor.left.target=100
 	motor.right.target=100
+	callsub NoFirst
 return
 
 #Allume les leds du compteur
