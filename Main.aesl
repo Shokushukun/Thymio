@@ -150,7 +150,7 @@ sub LedsP
 		call math.fill(LCP[0:5],10)
 	end
 	if Compteur>=7 then
-		call math.fill(LCP[0:3],10)
+		call math.fill(LCP[0:6],10)
 	end
 
 #Affiche le nombre sur les leds
