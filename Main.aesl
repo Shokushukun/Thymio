@@ -6,6 +6,9 @@
 
 
 <!--list of constants-->
+<constant value="6" name="De"/>
+<constant value="4" name="Longueur"/>
+<constant value="2" name="Largeur"/>
 
 
 <!--show keywords state-->
@@ -21,11 +24,8 @@ var LCD[8] #Leds du cercle allumées par le dé
 var LCP[8] #Leds du cercle ayant été parcourues
 var Compteur #Compte les lignes
 var AllowD #Autorise le compteur à compter les lignes
-var Longueur
-var Largeur
+var Case
 
-Longueur = 4 
-Largeur = 2
 callsub Init
 
 ############# Initialisation #############
@@ -149,6 +149,9 @@ sub LedsP
 	if Compteur>=6 then
 		call math.fill(LCP[0:5],10)
 	end
+	if Compteur>=7 then
+		call math.fill(LCP[0:3],10)
+	end
 
 #Affiche le nombre sur les leds
 sub LedsD
@@ -163,7 +166,7 @@ return
 #Génère la variable Random avec un nombre aléatoire de 1 à 6
 sub RandomGen
 	call math.rand( Random1 )
-	Random = abs( Random1 % 6 ) + 1
+	Random = abs( Random1 % De ) + 1
 return</node>
 
 
