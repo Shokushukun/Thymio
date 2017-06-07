@@ -28,7 +28,7 @@ Longueur = 4
 Largeur = 2
 callsub Init
 
-#Initialisation
+############# Initialisation #############
 sub Init
 	Random1 = 0 #Reset de la valeur Random1
 	Random = 0 #Reset de la valeur Random
@@ -46,6 +46,11 @@ sub Init
 	timer.period[0]=0 #Timer
 return
 
+
+############# Events #############
+
+#Bouton central : Appèle la routine pour générer un nombre de 1 à 6
+#Puis définit le nombre de case à avancer par ce nombre
 onevent button.center
 	when button.center == 1 do
 		callsub RandomGen #Génère un nombre aléatoire de 1 à 6
@@ -53,15 +58,21 @@ onevent button.center
 		Dice = Random #Le robot doit avancer de Random cases
 	end
 
-
+#Bonton arrière : réinitialise le thymio
 onevent button.backward
 	callsub Init
 
+#Met à jour les leds et compte les lignes
 onevent motor
 	callsub Leds
 	callsub CompteLignes
 	
 
+
+
+############# Routines #############
+
+#À chaque fois que le thymio passe une ligne, ajoute 1 au compteur
 sub CompteLignes
 	when prox.ground.delta[1]&lt;800 do
 		Compteur++
@@ -69,12 +80,13 @@ sub CompteLignes
 return
 
 
-
+#Arrête les deux moteurs
 sub Arret
 	motor.right.target=0
 	motor.left.target=0
 return
 
+#Met les deux moteurs à 100
 sub Avant
 	motor.left.target=100
 	motor.right.target=100
