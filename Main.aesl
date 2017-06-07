@@ -111,7 +111,7 @@ onevent timer0
 	if AllowD==0 then
 		AllowDTimer++
 	end
-	if AllowDTimer>=1500 then
+	if AllowDTimer>=1400 then
 		AllowD=1
 		AllowDTimer=0
 	end
