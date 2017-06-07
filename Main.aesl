@@ -30,6 +30,8 @@ var tourneGauche[2]
 var tourneDroite[2]
 var timerRotate
 var timerRotateTimer
+var tourneG
+var tourneD
 
 callsub Init
 
@@ -46,6 +48,8 @@ sub Init
 	timerRotate= 0
 	timerRotateTimer = 0
 	Case = 0
+	tourneG=0
+	tourneD=0
 	
 	callsub Arret
 	
@@ -98,40 +102,50 @@ onevent timer0
 	if AllowD==0 then
 		AllowDTimer++
 	end
-	if AllowDTimer>=2000 then
+	if AllowDTimer>=1500 then
 		AllowD=1
 		AllowDTimer=0
 	end
 	if timerRotate==1 then
 		timerRotateTimer++
 	end
-	if timerRotateTimer>=2200 then
+	when timerRotateTimer>=2200 do
 		timerRotateTimer=0
 		timerRotate=0
 		callsub Arret
+		if Compteur&lt;Dice then
+			callsub Avant
+		end
 	end
-
 
 
 ############# Routines #############
 
 
 sub Tourne
-	when Case%tourneGauche[0]==0 and Case>0 do
+	when Case%tourneGauche[0]==0 and Case>0 and not Case%tourneDroite[1]==0 and not tourneG>=2 do
 		call leds.bottom.left(100,100,100)
 		callsub tourneGauche
+		tourneG++
+		tourneD=0
 	end
-	when Case%tourneGauche[1]==0 and Case>0 do
+	when Case%tourneGauche[1]==0 and Case>0 and not Case%tourneDroite[1]==0 and not tourneG>=2 do
 		call leds.bottom.left(100,100,100)
 		callsub tourneGauche
+		tourneG++
+		tourneD=0
 	end
 	when Case%tourneDroite[0]==0 and Case>0 do
 		call leds.bottom.left(100,100,100)
 		callsub tourneDroite
+		tourneG=0
+		tourneD++
 	end
 	when Case%tourneDroite[1]==0 and Case>0 do
 		call leds.bottom.left(100,100,100)
 		callsub tourneDroite
+		tourneG=0
+		tourneD++
 	end
 return
 
