@@ -39,9 +39,11 @@ callsub Init
 ############# Initialisation #############
 
 sub Init
-	Random1 = 0 #Reset de la valeur Random1
-	Random = 0 #Reset de la valeur Random
-	Dice = 0 #Réinitialise le dé
+
+	#Reset des variables
+	Random1 = 0
+	Random = 0 
+	Dice = 0
 	Compteur = 0
 	AllowD = 1
 	AllowDTimer= 0
@@ -61,6 +63,7 @@ sub Init
 	timer.period[1]=0 #Timer du virage : Arrêt
 	timer.period[0]=1 #Timer pour ignorer les lignes : Arrêt
 	
+	#Définit sur quelles cases tourner
 	tourneGauche[0]=Longueur-1
 	tourneGauche[1]=Longueur
 	tourneDroite[0]=(Longueur*2)-1
@@ -91,17 +94,20 @@ onevent motor
 	callsub Leds
 	callsub CompteLignes
 	callsub Check
-	callsub Tourne
+	callsub Tourne #Regarde s'il faut tourner
+	callsub Fin #Regarde si le tableau est fini
 	
 #Fait avancer le robot
 onevent button.forward
 	callsub Avant
 	
 onevent button.left
-	Case++
+	Case++ #+1 à la variable Case (pour debug)
 
-#Timer pour ignorer les lignes pendant 2s ; s'arrête après activation
+#Timer qui fait fonctionner les timers de virage et détection
 onevent timer0
+
+	#Timer de détection de lignes avec une durée de 1,5s
 	if AllowD==0 then
 		AllowDTimer++
 	end
@@ -109,13 +115,19 @@ onevent timer0
 		AllowD=1
 		AllowDTimer=0
 	end
+	
+	#Timer pour la rotation avec une durée de 2,2s
 	if timerRotate==1 then
 		timerRotateTimer++
 	end
+	
+	#Lorsque le timer se finit, arrêter la rotation
 	when timerRotateTimer>=2200 do
 		timerRotateTimer=0
 		timerRotate=0
 		callsub Arret
+		
+		#Si il reste des cases à parcourir, alors avancer
 		if Compteur&lt;Dice then
 			callsub Avant
 		end
@@ -125,30 +137,36 @@ onevent timer0
 ############# Routines #############
 
 
+#
+#Vérifie s'il faut tourner ou pas et de quel côté
+#A chaque rotation, ajoute 1 à un compteur
+#Le robot ne peut tourner que deux fois du même côté
+#
+
 sub Tourne
 	when Case%tourneGauche[0]==0 and Case>0 and not Case%tourneDroite[1]==0 and not tourneG>=2 do
 		call leds.bottom.left(100,100,100)
 		callsub tourneGauche
-		tourneG++
-		tourneD=0
+		tourneG++ #Compteur de virages
+		tourneD=0 #Reset l'autre compteur de virages
 	end
 	when Case%tourneGauche[1]==0 and Case>0 and not Case%tourneDroite[1]==0 and not tourneG>=2 do
 		call leds.bottom.left(100,100,100)
 		callsub tourneGauche
-		tourneG++
-		tourneD=0
+		tourneG++ 
+		tourneD=0 
 	end
 	when Case%tourneDroite[0]==0 and Case>0 and not tourneD>=2 do
 		call leds.bottom.left(100,100,100)
 		callsub tourneDroite
-		tourneG=0
-		tourneD++
+		tourneG=0 
+		tourneD++ 
 	end
 	when Case%tourneDroite[1]==0 and Case>0 and not tourneD>=2 do
 		call leds.bottom.left(100,100,100)
 		callsub tourneDroite
-		tourneG=0
-		tourneD++
+		tourneG=0 
+		tourneD++ 
 	end
 return
 
@@ -168,6 +186,13 @@ sub tourneDroite
 	timerRotate=1
 return
 
+sub Fin
+	if Case==(Longueur*Largeur)-1 then
+		callsub Arret
+		call leds.top(0,20,0)
+	end
+return
+
 #Compare le nombre de lignes et fait arrêter le robot au besoin
 sub Check
 	#motor.left.target est utilisé pour remettre à zéro le when lorsque
@@ -176,6 +201,7 @@ sub Check
 	when Compteur>=Dice and motor.left.target>0 do
 		callsub Arret
 	end
+return
 
 #Empêche la première ligne d'être détectée pendant 2s
 sub NoFirst
@@ -211,6 +237,7 @@ return
 sub Leds
 	callsub LedsD
 	callsub LedsP
+	call leds.top(0,0,0)
 	LC[0:7]=LCD[0:7]+LCP[0:7] #Fusionne le dé avec le nombre de case parcourues
 	call leds.circle(LC[0],LC[1],LC[2],LC[3],LC[4],LC[5],LC[6],LC[7])
 return
