@@ -25,13 +25,13 @@ var LCP[8] #Leds du cercle ayant été parcourues
 var Compteur #Compte les lignes
 var AllowD #Autorise le compteur à compter les lignes
 var AllowDTimer #Timer pour AllowD
-var Case
-var tourneGauche[2]
-var tourneDroite[2]
-var timerRotate
-var timerRotateTimer
-var tourneG
-var tourneD
+var Case #Nombre de cases parcourues
+var tourneGauche[2] #Définit les cases sur lesquelles tourner à gauche
+var tourneDroite[2] #Définit les cases sur lesquelles tourner à droite
+var timerRotate #Timer pour les rotations
+var timerRotateTimer #idem
+var tourneG #Compte le nombre de fois ou il a tourné à gauche
+var tourneD #Idem mais à droite
 
 callsub Init
 
@@ -74,6 +74,9 @@ return
 #Puis définit le nombre de case à avancer par ce nombre
 onevent button.center
 	when button.center == 1 do
+		Compteur=0
+		call math.fill(LCP,0)	#Réinitialise les leds du cercle
+		call math.fill(LCD,0)
 		callsub RandomGen #Génère un nombre aléatoire de 1 à 6
 		call math.fill(LCD,0) #Réinitialise les leds avant de générer le nombre aléatoire
 		Dice = Random #Le robot doit avancer de Random cases
@@ -135,13 +138,13 @@ sub Tourne
 		tourneG++
 		tourneD=0
 	end
-	when Case%tourneDroite[0]==0 and Case>0 do
+	when Case%tourneDroite[0]==0 and Case>0 and not tourneD>=2 do
 		call leds.bottom.left(100,100,100)
 		callsub tourneDroite
 		tourneG=0
 		tourneD++
 	end
-	when Case%tourneDroite[1]==0 and Case>0 do
+	when Case%tourneDroite[1]==0 and Case>0 and not tourneD>=2 do
 		call leds.bottom.left(100,100,100)
 		callsub tourneDroite
 		tourneG=0
@@ -149,16 +152,20 @@ sub Tourne
 	end
 return
 
-
+#Fait tourner le robot sur lui même vers la gauche
 sub tourneGauche
-	AllowD=0
+	AllowD=0 #Empêche de compter les lignes pendant la rotation
 	motor.left.target=-100
 	motor.right.target=100
-	timerRotate=1
+	timerRotate=1 #Lance le timer de rotation
 return
 
+#Fait tourner le robot sur lui même vers la droite
 sub tourneDroite
-	
+	AllowD=0
+	motor.left.target=90
+	motor.right.target=-90 #La vitesse est de 90 après tests
+	timerRotate=1
 return
 
 #Compare le nombre de lignes et fait arrêter le robot au besoin
@@ -177,7 +184,7 @@ sub NoFirst
 return
 
 #À chaque fois que le thymio passe une ligne, ajoute 1 au compteur
-#tant que AllowD==1 
+#et au nombre de cases tant que AllowD==1 
 sub CompteLignes
 	when prox.ground.delta[1]&lt;750 do
 		if AllowD==1 then
@@ -197,14 +204,14 @@ return
 sub Avant
 	motor.left.target=100
 	motor.right.target=100
-	callsub NoFirst
+	callsub NoFirst #Empêche de compter la première ligne
 return
 
 #Allume les leds du compteur
 sub Leds
 	callsub LedsD
 	callsub LedsP
-	LC[0:7]=LCD[0:7]+LCP[0:7]
+	LC[0:7]=LCD[0:7]+LCP[0:7] #Fusionne le dé avec le nombre de case parcourues
 	call leds.circle(LC[0],LC[1],LC[2],LC[3],LC[4],LC[5],LC[6],LC[7])
 return
 
