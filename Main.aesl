@@ -32,6 +32,8 @@ var timerRotate #Timer pour les rotations
 var timerRotateTimer #idem
 var tourneG #Compte le nombre de fois ou il a tourné à gauche
 var tourneD #Idem mais à droite
+var Devant
+var Derriere
 
 callsub Init
 
@@ -52,6 +54,9 @@ sub Init
 	Case = 0
 	tourneG=0
 	tourneD=0
+	Derriere=0
+	Devant=0
+	prox.comm.tx=0
 	
 	callsub Arret
 	
@@ -59,6 +64,7 @@ sub Init
 	call math.fill(LCP,0)	#Réinitialise les leds du cercle
 	call math.fill(LCD,0)
 	callsub Leds #Puissance des leds : 0
+	call prox.comm.enable(1)
 	
 	timer.period[1]=0 #Timer du virage : Arrêt
 	timer.period[0]=1 #Timer pour ignorer les lignes : Arrêt
@@ -133,6 +139,30 @@ onevent timer0
 		end
 	end
 
+onevent prox
+	if prox.horizontal[2]>=3000 then
+		Devant=1
+		call leds.top(0,0,100)
+	else
+		Devant=0
+	end
+	if prox.horizontal[5]>3000 or prox.horizontal[6]>3000 then
+		Derriere=1
+		call leds.top(0,100,0)
+	else
+		Derriere=0
+	end
+	when Devant==1 do
+		prox.comm.tx=(Dice-Compteur)-1
+		Dice=Compteur+1
+	end
+	when Derriere==1 do
+		Dice=prox.comm.rx
+		if prox.comm.rx>0 then
+			callsub Avant
+		end
+	end
+	
 
 ############# Routines #############
 
@@ -274,6 +304,7 @@ sub LedsD
 	#Obligatoire, sinon crash pour accès à un secteur inexistant de l'array LCD lorsque Dice-1&lt;0
 		call math.fill(LCD,0)
 	elseif Dice>0 then #Si le dé>0, alors allumer la led correspondante
+		call math.fill(LCD,0)
 		call math.fill(LCD[abs(Dice-1)],1)
 	end
 return
